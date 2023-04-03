@@ -93,20 +93,24 @@ class VitalsRenderer {
         return;
       }
 
-      const { size, rows = 1 } = this.options;
+      console.log(
+        "buffer length in ",
+        this.options.channel,
+        this.buffer.length
+      );
 
       // Move the cursor to the next data point.
       this.cursorX += this.deltaX;
 
       // If the cursor is out of bounds, move it to the beginning of the first row.
-      if (this.cursorX > size.width * rows) {
+      if (this.cursorX > this.options.size.width * rows) {
         this.cursorX = 0;
       }
 
       // Move cursor to correct row.
-      const deltaRows = Math.floor(this.cursorX / size.width);
-      const x = this.cursorX - deltaRows * size.width;
-      const y = next + deltaRows * size.height;
+      const deltaRows = Math.floor(this.cursorX / this.options.size.width);
+      const x = this.cursorX - deltaRows * this.options.size.width;
+      const y = next + deltaRows * this.options.size.height;
 
       // Draw a point
       const ctx = this.renderContext;
@@ -114,6 +118,37 @@ class VitalsRenderer {
       ctx.beginPath();
       ctx.arc(x, y, 0.5, 0, 2 * Math.PI);
       ctx.fill();
+
+      // const buffer = [...this.buffer];
+      // this.buffer = [];
+
+      // if (buffer.length === 0) {
+      //   console.log("no data in ", this.options.channel);
+      //   return;
+      // }
+
+      // const { size, rows = 1 } = this.options;
+
+      // for (const next of buffer) {
+      //   // Move the cursor to the next data point.
+      //   this.cursorX += this.deltaX;
+
+      //   // If the cursor is out of bounds, move it to the beginning of the first row.
+      //   if (this.cursorX > size.width * rows) {
+      //     this.cursorX = 0;
+      //   }
+
+      //   // Move cursor to correct row.
+      //   const deltaRows = Math.floor(this.cursorX / size.width);
+      //   const x = this.cursorX - deltaRows * size.width;
+      //   const y = next + deltaRows * size.height;
+
+      //   // Draw a point
+      //   const ctx = this.renderContext;
+      //   ctx.fillStyle = "yellow";
+      //   ctx.beginPath();
+      //   ctx.arc(x, y, 0.5, 0, 2 * Math.PI);
+      //   ctx.fill();
     }, samplingInterval);
   }
 

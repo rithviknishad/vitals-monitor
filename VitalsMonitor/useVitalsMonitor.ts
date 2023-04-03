@@ -7,7 +7,7 @@ import VitalsMonitorClient, {
 } from "./VitalsMonitorClient";
 import VitalsRenderer from "./VitalsRenderer";
 
-const MONITOR_SIZE = { width: 880, height: 420 };
+const MONITOR_SIZE = { width: 660, height: 420 };
 
 export default function useVitalsMonitor() {
   const { canvasRef, contextRef } = useCanvas();
