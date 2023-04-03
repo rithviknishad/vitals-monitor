@@ -1,5 +1,3 @@
-"use client";
-
 interface Props {
   onConnect: (socketUrl: string) => void;
 }
@@ -7,14 +5,13 @@ interface Props {
 export default function ConfigurationForm({ onConnect }: Props) {
   return (
     <form
-      className="p-2 flex items-center gap-2 whitespace-nowrap"
+      className="p-2 flex items-center w-full max-w-2xl mx-auto gap-2 whitespace-nowrap"
       onSubmit={(e) => {
         e.preventDefault();
         const socketUrl = e.currentTarget.socketUrl.value;
         onConnect(socketUrl);
       }}
     >
-      <label>Web Socket URL : </label>
       <input
         name="socketUrl"
         type="text"

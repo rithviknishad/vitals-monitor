@@ -1,28 +1,24 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { MONITOR_SIZE } from "@/VitalsMonitor/constants";
 import VitalsSourceConfig from "./VitalsSourceConfig";
+import useVitalsMonitor from "@/VitalsMonitor/useVitalsMonitor";
 
 export default function Home() {
-  const ws = useRef<WebSocket | null>(null);
-
-  const connect = useCallback((socketUrl: string) => {
-    if (ws.current) {
-      ws.current.close();
-    }
-
-    ws.current = new WebSocket(socketUrl);
-    ws.current.onopen = () => console.log("connected");
-    ws.current.onclose = () => console.log("disconnected");
-
-    ws.current.addEventListener("message", (event) => {
-      console.log(event.data);
-    });
-  }, []);
+  const { connect, canvasRef } = useVitalsMonitor();
 
   return (
-    <div className="flex flex-col h-screen w-full gap-2 bg-black text-white">
+    <div className="flex flex-col h-screen w-full gap-2">
       <VitalsSourceConfig onConnect={connect} />
+      <canvas
+        className="bg-black"
+        style={{
+          height: MONITOR_SIZE.height,
+          width: MONITOR_SIZE.width,
+        }}
+        ref={canvasRef}
+        {...MONITOR_SIZE}
+      />
     </div>
   );
 }
