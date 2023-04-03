@@ -1,12 +1,4 @@
-import { ObservationID, VitalsMonitorObservation } from "./types";
-
-import { EventEmitter } from "stream";
-
-type EventName =
-  | ObservationID
-  | "ecg-waveform"
-  | "pleth-waveform"
-  | "resp-waveform";
+import { EventEmitter } from "events";
 
 const WAVEFORM_KEY_MAP: Record<string, EventName> = {
   II: "ecg-waveform",
@@ -14,7 +6,18 @@ const WAVEFORM_KEY_MAP: Record<string, EventName> = {
   Respiration: "resp-waveform",
 };
 
-class VitalsMonitor extends EventEmitter {
+/**
+ * Provides the API for connecting to the Vitals Monitor WebSocket and emitting
+ * events for each observation.
+ *
+ * @example
+ * const vitalsMonitor = new VitalsMonitor("wss://vitals-middleware.local/observations/192.168.1.14");
+ *
+ * vitalsMonitor.on("SpO2", (observation) => {
+ *  console.log(observation.value);
+ * });
+ */
+class VitalsMonitorClient extends EventEmitter {
   constructor(socketUrl: string) {
     super();
     this._ws = new WebSocket(socketUrl);
@@ -39,9 +42,8 @@ class VitalsMonitor extends EventEmitter {
     });
   }
 
-  _parseObservations(data: string): VitalsMonitorObservation[] {
-    const observations = JSON.parse(data || "[]");
-    return observations;
+  _parseObservations(data: string) {
+    return JSON.parse(data || "[]") as VitalsMonitorObservation[];
   }
 
   disconnect() {
@@ -74,4 +76,41 @@ class VitalsMonitor extends EventEmitter {
   }
 }
 
-export default VitalsMonitor;
+export default VitalsMonitorClient;
+
+export type ObservationID =
+  | "heart-rate"
+  | "ST"
+  | "SpO2"
+  | "pulse-rate"
+  | "respiratory-rate"
+  | "body-temperature1"
+  | "body-temperature2"
+  | "waveform";
+
+export interface VitalsMonitorObservation {
+  observation_id: ObservationID | "waveform";
+  device_id: string;
+  "date-time": string;
+  "patient-id": string;
+  "patient-name": string;
+  status?: string;
+  value?: number;
+  unit?: string;
+  interpretation?: string;
+  "low-limit"?: number;
+  "high-limit"?: number;
+  "wave-name"?: "II" | "Pleth" | "Respiration";
+  resolution?: string;
+  "sampling rate"?: string;
+  "data-baseline"?: number;
+  "data-low-limit"?: number;
+  "data-high-limit"?: number;
+  data?: string;
+}
+
+type EventName =
+  | ObservationID
+  | "ecg-waveform"
+  | "pleth-waveform"
+  | "resp-waveform";

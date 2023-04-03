@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+"use client";
+
+import { useEffect, useRef } from "react";
 
 export default function useCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);

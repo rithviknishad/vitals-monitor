@@ -42,8 +42,30 @@ interface Options {
   size: { width: number; height: number };
 }
 
-class VitalsWaveform {
-  constructor(canvas: CanvasRenderingContext2D, options: Options) {
+/**
+ * Provides the API for rendering vitals waveform data.
+ * @param renderContext The canvas rendering context to use for rendering.
+ * @param options The options to use for rendering.
+ *
+ * @example
+ * const renderContext = canvas.getContext("2d");
+ *
+ * const renderer = new VitalsRenderer(renderContext, {
+ *  channel: "ECG",
+ *  samplingInterval: 100,
+ *  baseline: 0,
+ *  lowLimit: -1,
+ *  highLimit: 1,
+ *  cycleDuration: 7000,
+ *  rows: 2,
+ *  position: { x: 0, y: 0 },
+ *  size: { width: 100, height: 100 },
+ * });
+ *
+ * renderer.append([0, 0.5, 1, 0.5, 0, -0.5, -1, -0.5, 0]);
+ */
+class VitalsRenderer {
+  constructor(renderContext: CanvasRenderingContext2D, options: Options) {
     const {
       samplingInterval,
       cycleDuration,
@@ -58,12 +80,41 @@ class VitalsWaveform {
       throw new Error("Rows must be greater than 0");
     }
 
-    this.canvas = canvas;
+    this.buffer = [];
+    this.renderContext = renderContext;
     this.options = options;
     this.deltaX = (samplingInterval / cycleDuration) * width * rows;
-    this.interval = setInterval(this.draw, samplingInterval);
     this.transform = lerp(lowLimit, highLimit, y, y + height);
     this.cursorX = -this.deltaX;
+    this.interval = setInterval(() => {
+      const next = this.buffer.shift();
+      if (!next) {
+        console.log("no more data in ", this.options.channel);
+        return;
+      }
+
+      const { size, rows = 1 } = this.options;
+
+      // Move the cursor to the next data point.
+      this.cursorX += this.deltaX;
+
+      // If the cursor is out of bounds, move it to the beginning of the first row.
+      if (this.cursorX > size.width * rows) {
+        this.cursorX = 0;
+      }
+
+      // Move cursor to correct row.
+      const deltaRows = Math.floor(this.cursorX / size.width);
+      const x = this.cursorX - deltaRows * size.width;
+      const y = next + deltaRows * size.height;
+
+      // Draw a point
+      const ctx = this.renderContext;
+      ctx.fillStyle = "yellow";
+      ctx.beginPath();
+      ctx.arc(x, y, 0.5, 0, 2 * Math.PI);
+      ctx.fill();
+    }, samplingInterval);
   }
 
   /**
@@ -74,40 +125,14 @@ class VitalsWaveform {
     this.buffer.push(...data.map(this.transform));
   }
 
-  private draw() {
-    const next = this.buffer.shift();
-    if (!next) return;
-
-    const { size, rows = 1 } = this.options;
-
-    // Move the cursor to the next data point.
-    this.cursorX += this.deltaX;
-
-    // If the cursor is out of bounds, move it to the beginning of the first row.
-    if (this.cursorX > size.width * rows) {
-      this.cursorX = 0;
-    }
-
-    // Move cursor to correct row.
-    const deltaRows = Math.floor(this.cursorX / size.width);
-    const x = this.cursorX - deltaRows * size.width;
-    const y = next + deltaRows * size.height;
-
-    // Draw a point
-    const ctx = this.canvas;
-    ctx.beginPath();
-    ctx.arc(x, y, 1, 0, 2 * Math.PI);
-    ctx.fill();
-  }
-
   /**
    * The options for this waveform.
    */
   private options: Options;
   /**
-   * The canvas context to draw the waveform.
+   * The canvas render context to draw the waveform.
    */
-  private canvas: CanvasRenderingContext2D;
+  private renderContext: CanvasRenderingContext2D;
   /**
    * The width between two data points in the same row.
    */
@@ -130,7 +155,7 @@ class VitalsWaveform {
   private transform: (data: number) => number;
 }
 
-export default VitalsWaveform;
+export default VitalsRenderer;
 
 /**
  * Maps a value from one range to another.
