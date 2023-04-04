@@ -3,7 +3,7 @@ import { EventEmitter } from "events";
 const WAVEFORM_KEY_MAP: Record<string, EventName> = {
   II: "ecg-waveform",
   Pleth: "pleth-waveform",
-  Respiration: "resp-waveform",
+  Respiration: "spo2-waveform",
 };
 
 /**
@@ -113,4 +113,4 @@ type EventName =
   | ObservationID
   | "ecg-waveform"
   | "pleth-waveform"
-  | "resp-waveform";
+  | "spo2-waveform";

@@ -5,7 +5,7 @@ import useCanvas from "@/hooks/useCanvas";
 import VitalsMonitorClient, {
   VitalsMonitorObservation,
 } from "./VitalsMonitorClient";
-import OldVitalsRenderer from "./OldVitalsRenderer";
+import VitalsRenderer, { ChannelOptions } from "./VitalsRenderer";
 
 const MONITOR_SIZE = { width: 880, height: 420 };
 
@@ -13,51 +13,58 @@ export default function useVitalsMonitor() {
   const { canvasRef, contextRef } = useCanvas();
 
   const monitor = useRef<VitalsMonitorClient>();
+  const renderer = useRef<VitalsRenderer | null>(null);
 
-  const ecgRenderer = useRef<OldVitalsRenderer | null>(null);
-  const plethRenderer = useRef<OldVitalsRenderer | null>(null);
-  const spo2Renderer = useRef<OldVitalsRenderer | null>(null);
+  const ecgOptionsRef = useRef<ChannelOptions>();
+  const plethOptionsRef = useRef<ChannelOptions>();
+  const spo2OptionsRef = useRef<ChannelOptions>();
 
   const connect = useCallback(
     (socketUrl: string) => {
       monitor.current?.disconnect();
 
       monitor.current = new VitalsMonitorClient(socketUrl);
+      monitor.current.connect();
 
-      const renderContext = contextRef.current as CanvasRenderingContext2D;
+      function obtainRenderer() {
+        if (
+          !ecgOptionsRef.current ||
+          !plethOptionsRef.current ||
+          !spo2OptionsRef.current
+        )
+          return;
+
+        renderer.current = new VitalsRenderer({
+          renderContext: contextRef.current as CanvasRenderingContext2D,
+          size: MONITOR_SIZE,
+          animationInterval: 50,
+          ecg: ecgOptionsRef.current,
+          pleth: plethOptionsRef.current,
+          spo2: spo2OptionsRef.current,
+        });
+
+        const _renderer = renderer.current;
+        const _monitor = monitor.current;
+
+        _monitor?.on("ecg-waveform", ingestTo(_renderer, "ecg"));
+        _monitor?.on("pleth-waveform", ingestTo(_renderer, "pleth"));
+        _monitor?.on("spo2-waveform", ingestTo(_renderer, "spo2"));
+      }
 
       monitor.current.once("ecg-waveform", (observation) => {
-        ecgRenderer.current = new OldVitalsRenderer(renderContext, {
-          channel: "ECG",
-          cycleDuration: 7e3,
-          position: { x: 0, y: 0 },
-          rows: 2,
-          ...parseOptionsFromObservation(observation),
-        });
-        monitor.current?.on("ecg-waveform", ingestTo(ecgRenderer.current));
+        ecgOptionsRef.current = getChannel(observation);
+        obtainRenderer();
       });
 
       monitor.current.once("pleth-waveform", (observation) => {
-        plethRenderer.current = new OldVitalsRenderer(renderContext, {
-          channel: "Pleth",
-          cycleDuration: 7e3,
-          position: { x: 0, y: MONITOR_SIZE.height * 0.5 },
-          ...parseOptionsFromObservation(observation),
-        });
-        monitor.current?.on("pleth-waveform", ingestTo(plethRenderer.current));
+        plethOptionsRef.current = getChannel(observation);
+        obtainRenderer();
       });
 
-      monitor.current.once("resp-waveform", (observation) => {
-        spo2Renderer.current = new OldVitalsRenderer(renderContext, {
-          channel: "Resp",
-          cycleDuration: 7e3,
-          position: { x: 0, y: MONITOR_SIZE.height * 0.75 },
-          ...parseOptionsFromObservation(observation),
-        });
-        monitor.current?.on("resp-waveform", ingestTo(spo2Renderer.current));
+      monitor.current.once("spo2-waveform", (observation) => {
+        spo2OptionsRef.current = getChannel(observation);
+        obtainRenderer();
       });
-
-      monitor.current.connect();
     },
     [contextRef]
   );
@@ -65,26 +72,24 @@ export default function useVitalsMonitor() {
   return { canvasRef, connect, size: MONITOR_SIZE };
 }
 
-const parseOptionsFromObservation = (observation: VitalsMonitorObservation) => {
-  const samplingInterval =
-    1e3 / parseInt(observation["sampling rate"]?.replace("/sec", "") ?? "-1");
-
-  if (samplingInterval <= 0) {
-    throw new Error("Invalid sampling rate");
-  }
-
+const getChannel = (observation: VitalsMonitorObservation): ChannelOptions => {
   return {
-    size: { width: 800, height: MONITOR_SIZE.height / 4 },
-    samplingInterval,
+    samplingRate: parseInt(
+      observation["sampling rate"]?.replace("/sec", "") ?? "-1"
+    ),
     baseline: observation["data-baseline"] ?? 0,
     lowLimit: observation["data-low-limit"] ?? 0,
     highLimit: observation["data-high-limit"] ?? 0,
   };
 };
 
-const ingestTo = (vitalsRenderer: OldVitalsRenderer) => {
+const ingestTo = (
+  vitalsRenderer: VitalsRenderer,
+  channel: "ecg" | "pleth" | "spo2"
+) => {
   return (observation: VitalsMonitorObservation) => {
     vitalsRenderer.append(
+      channel,
       observation.data?.split(" ").map((x) => parseInt(x)) || []
     );
   };

@@ -116,7 +116,9 @@ class VitalsRenderer {
     };
 
     // Draw baseline for each channel.
-    Object.values(this.state).forEach((ch) => drawBaseline(options, ch));
+    drawBaseline(options, this.state.ecg, 2);
+    drawBaseline(options, this.state.pleth);
+    drawBaseline(options, this.state.spo2);
   }
 
   private options: Options;
@@ -133,16 +135,20 @@ class VitalsRenderer {
 
 export default VitalsRenderer;
 
-const drawBaseline = (options: Options, channel: ChannelState) => {
+const drawBaseline = (options: Options, channel: ChannelState, rows = 1) => {
   const { renderContext: ctx } = options;
 
-  const y = channel.transform(channel.options.baseline);
+  for (let i = 0; i < rows; i++) {
+    const y =
+      channel.transform(channel.options.baseline) +
+      (i * options.size.height) / 4;
 
-  ctx.beginPath();
-  ctx.moveTo(0, y);
-  ctx.lineTo(options.size.width, y);
-  ctx.strokeStyle = channel.color;
-  ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(options.size.width, y);
+    ctx.strokeStyle = channel.color;
+    ctx.stroke();
+  }
 };
 
 /**
