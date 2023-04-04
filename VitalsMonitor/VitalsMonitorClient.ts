@@ -26,8 +26,11 @@ class VitalsMonitorClient extends EventEmitter {
   _ws: WebSocket;
 
   connect() {
-    this._ws.onopen = () => console.log("connected");
-    this._ws.onclose = () => console.log("disconnected");
+    this._ws.onopen = () =>
+      console.info(`VitalsMonitorClient(${this._ws.url}): Connected`);
+
+    this._ws.onclose = () =>
+      console.info(`VitalsMonitorClient(${this._ws.url}): Disconnected`);
 
     this._ws.addEventListener("message", (event) => {
       const observations = this._parseObservations(event.data);
