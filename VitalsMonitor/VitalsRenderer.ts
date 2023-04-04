@@ -172,7 +172,23 @@ export default VitalsRenderer;
  * map(-100); // -1
  */
 const lerp = (x0: number, x1: number, y0: number, y1: number) => {
-  // The first order partial differential of y with respect to x.
-  const dy_by_dx = (y1 - y0) / (x1 - x0);
-  return (x: number) => y0 + (x - x0) * dy_by_dx;
+  // Original formula:
+  // y = y0 + (x - x0) * (y1 - y0) / (x1 - x0)
+  //
+  // Simplified formula:
+  //
+  // 1. Take the first order partial derivative out
+  //      m = (y1 - y0) / (x1 - x0)
+  //    ∴ y = y0 + (x - x0) * m
+  //
+  // 2. Expanding the (x - x0) term yields:
+  //    ∴ y = y0 + x * m - x0 * m
+  //
+  // 3. Simplify the terms by grouping the constants together:
+  //      c = y0 - x0 * m
+  //    ∴ y = m * x + c
+
+  const m = (y1 - y0) / (x1 - x0);
+  const c = y0 - x0 * m;
+  return (x: number) => m * x + c;
 };
