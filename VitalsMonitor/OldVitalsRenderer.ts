@@ -44,6 +44,11 @@ interface Options {
 
 /**
  * Provides the API for rendering vitals waveform data.
+ *
+ * Strategy:
+ * - Render frequency is same as the sampling frequency.
+ * - Specific to a single waveform channel.
+ *
  * @param renderContext The canvas rendering context to use for rendering.
  * @param options The options to use for rendering.
  *
@@ -190,5 +195,6 @@ const lerp = (x0: number, x1: number, y0: number, y1: number) => {
 
   const m = (y1 - y0) / (x1 - x0);
   const c = y0 - x0 * m;
+
   return (x: number) => m * x + c;
 };

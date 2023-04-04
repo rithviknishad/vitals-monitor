@@ -5,7 +5,7 @@ import useCanvas from "@/hooks/useCanvas";
 import VitalsMonitorClient, {
   VitalsMonitorObservation,
 } from "./VitalsMonitorClient";
-import VitalsRenderer from "./VitalsRenderer";
+import OldVitalsRenderer from "./OldVitalsRenderer";
 
 const MONITOR_SIZE = { width: 880, height: 420 };
 
@@ -14,9 +14,9 @@ export default function useVitalsMonitor() {
 
   const monitor = useRef<VitalsMonitorClient>();
 
-  const ecgRenderer = useRef<VitalsRenderer | null>(null);
-  const plethRenderer = useRef<VitalsRenderer | null>(null);
-  const spo2Renderer = useRef<VitalsRenderer | null>(null);
+  const ecgRenderer = useRef<OldVitalsRenderer | null>(null);
+  const plethRenderer = useRef<OldVitalsRenderer | null>(null);
+  const spo2Renderer = useRef<OldVitalsRenderer | null>(null);
 
   const connect = useCallback(
     (socketUrl: string) => {
@@ -27,7 +27,7 @@ export default function useVitalsMonitor() {
       const renderContext = contextRef.current as CanvasRenderingContext2D;
 
       monitor.current.once("ecg-waveform", (observation) => {
-        ecgRenderer.current = new VitalsRenderer(renderContext, {
+        ecgRenderer.current = new OldVitalsRenderer(renderContext, {
           channel: "ECG",
           cycleDuration: 7e3,
           position: { x: 0, y: 0 },
@@ -38,7 +38,7 @@ export default function useVitalsMonitor() {
       });
 
       monitor.current.once("pleth-waveform", (observation) => {
-        plethRenderer.current = new VitalsRenderer(renderContext, {
+        plethRenderer.current = new OldVitalsRenderer(renderContext, {
           channel: "Pleth",
           cycleDuration: 7e3,
           position: { x: 0, y: MONITOR_SIZE.height * 0.5 },
@@ -48,7 +48,7 @@ export default function useVitalsMonitor() {
       });
 
       monitor.current.once("resp-waveform", (observation) => {
-        spo2Renderer.current = new VitalsRenderer(renderContext, {
+        spo2Renderer.current = new OldVitalsRenderer(renderContext, {
           channel: "Resp",
           cycleDuration: 7e3,
           position: { x: 0, y: MONITOR_SIZE.height * 0.75 },
@@ -82,7 +82,7 @@ const parseOptionsFromObservation = (observation: VitalsMonitorObservation) => {
   };
 };
 
-const ingestTo = (vitalsRenderer: VitalsRenderer) => {
+const ingestTo = (vitalsRenderer: OldVitalsRenderer) => {
   return (observation: VitalsMonitorObservation) => {
     vitalsRenderer.append(
       observation.data?.split(" ").map((x) => parseInt(x)) || []
