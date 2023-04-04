@@ -1,16 +1,16 @@
 import useVitalsMonitor from "@/VitalsMonitor/useVitalsMonitor";
 import { useEffect } from "react";
 
-export default function DummyVitalsMonitor({
-  socketUrl,
-}: {
-  socketUrl: string;
-}) {
+/**
+ * A dummy vitals monitor that connects to a socket and renders the vitals
+ * waveform.
+ */
+export default function DummyVitalsMonitor(props: { socketUrl: string }) {
   const monitor = useVitalsMonitor();
 
   useEffect(() => {
-    monitor.connect(socketUrl);
-  }, [socketUrl]);
+    monitor.connect(props.socketUrl);
+  }, [props.socketUrl]);
 
   const size = { width: monitor.size.width, height: monitor.size.height + 100 };
 
