@@ -84,20 +84,17 @@ class VitalsRenderer {
     this.renderContext = renderContext;
     this.options = options;
     this.deltaX = (samplingInterval / cycleDuration) * width * rows;
-    this.transform = lerp(lowLimit, highLimit, y, y + height);
+    this.transform = lerp(lowLimit, highLimit, y + height, y);
     this.cursorX = -this.deltaX;
-    this.interval = setInterval(() => {
+
+    setInterval(() => {
       const next = this.buffer.shift();
       if (!next) {
         console.log("no more data in ", this.options.channel);
         return;
       }
 
-      console.log(
-        "buffer length in ",
-        this.options.channel,
-        this.buffer.length
-      );
+      console.log("buffer length ", this.options.channel, this.buffer.length);
 
       // Move the cursor to the next data point.
       this.cursorX += this.deltaX;
@@ -118,37 +115,6 @@ class VitalsRenderer {
       ctx.beginPath();
       ctx.arc(x, y, 0.5, 0, 2 * Math.PI);
       ctx.fill();
-
-      // const buffer = [...this.buffer];
-      // this.buffer = [];
-
-      // if (buffer.length === 0) {
-      //   console.log("no data in ", this.options.channel);
-      //   return;
-      // }
-
-      // const { size, rows = 1 } = this.options;
-
-      // for (const next of buffer) {
-      //   // Move the cursor to the next data point.
-      //   this.cursorX += this.deltaX;
-
-      //   // If the cursor is out of bounds, move it to the beginning of the first row.
-      //   if (this.cursorX > size.width * rows) {
-      //     this.cursorX = 0;
-      //   }
-
-      //   // Move cursor to correct row.
-      //   const deltaRows = Math.floor(this.cursorX / size.width);
-      //   const x = this.cursorX - deltaRows * size.width;
-      //   const y = next + deltaRows * size.height;
-
-      //   // Draw a point
-      //   const ctx = this.renderContext;
-      //   ctx.fillStyle = "yellow";
-      //   ctx.beginPath();
-      //   ctx.arc(x, y, 0.5, 0, 2 * Math.PI);
-      //   ctx.fill();
     }, samplingInterval);
   }
 
@@ -176,10 +142,6 @@ class VitalsRenderer {
    * The buffer to store the transformed data points that are yet to be drawn.
    */
   private buffer: number[] = [];
-  /**
-   * The interval timer to draw the waveform.
-   */
-  private interval: NodeJS.Timer;
   /**
    * The current x coordinate of the cursor.
    */
