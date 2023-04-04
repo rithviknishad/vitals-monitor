@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import VitalsSourceConfig from "./VitalsSourceConfig";
-import useVitalsMonitor from "@/VitalsMonitor/useVitalsMonitor";
 import DummyVitalsMonitor from "./DummyVitalsMonitor";
 
 export default function Home() {

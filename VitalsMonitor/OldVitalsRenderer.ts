@@ -48,26 +48,6 @@ interface Options {
  * Strategy:
  * - Render frequency is same as the sampling frequency.
  * - Specific to a single waveform channel.
- *
- * @param renderContext The canvas rendering context to use for rendering.
- * @param options The options to use for rendering.
- *
- * @example
- * const renderContext = canvas.getContext("2d");
- *
- * const renderer = new VitalsRenderer(renderContext, {
- *  channel: "ECG",
- *  samplingInterval: 100,
- *  baseline: 0,
- *  lowLimit: -1,
- *  highLimit: 1,
- *  cycleDuration: 7000,
- *  rows: 2,
- *  position: { x: 0, y: 0 },
- *  size: { width: 100, height: 100 },
- * });
- *
- * renderer.append([0, 0.5, 1, 0.5, 0, -0.5, -1, -0.5, 0]);
  */
 class VitalsRenderer {
   constructor(renderContext: CanvasRenderingContext2D, options: Options) {

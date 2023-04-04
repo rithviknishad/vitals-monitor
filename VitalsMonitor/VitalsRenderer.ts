@@ -116,9 +116,16 @@ class VitalsRenderer {
     };
 
     // Draw baseline for each channel.
-    drawBaseline(options, this.state.ecg, 2);
-    drawBaseline(options, this.state.pleth);
-    drawBaseline(options, this.state.spo2);
+    this.initialize(this.state.ecg, 2);
+    this.initialize(this.state.pleth);
+    this.initialize(this.state.spo2);
+
+    // Start rendering.
+    setInterval(() => {
+      this.render(this.state.ecg, 2);
+      this.render(this.state.pleth);
+      this.render(this.state.spo2);
+    }, options.animationInterval);
   }
 
   private options: Options;
@@ -131,25 +138,46 @@ class VitalsRenderer {
     const state = this.state[channel];
     state.buffer.push(...data.map(state.transform));
   }
-}
 
-export default VitalsRenderer;
+  private initialize(channel: ChannelState, rows = 1) {
+    const { renderContext: ctx, size } = this.options;
 
-const drawBaseline = (options: Options, channel: ChannelState, rows = 1) => {
-  const { renderContext: ctx } = options;
+    for (let i = 0; i < rows; i++) {
+      const y =
+        channel.transform(channel.options.baseline) + (i * size.height) / 4;
 
-  for (let i = 0; i < rows; i++) {
-    const y =
-      channel.transform(channel.options.baseline) +
-      (i * options.size.height) / 4;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(size.width, y);
+      ctx.strokeStyle = channel.color;
+      ctx.stroke();
+    }
+
+    channel.cursor = { x: 0, y: channel.transform(channel.options.baseline) };
+  }
+
+  private render(channel: ChannelState, rows = 1) {
+    const { renderContext: ctx, size } = this.options;
+    const { cursor, deltaX, buffer } = channel;
+
+    if (buffer.length === 0) return;
 
     ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(options.size.width, y);
+    ctx.moveTo(cursor.x, cursor.y);
+
+    for (let i = 0; i < channel.pointsPerFrame; i++) {
+      const value = channel.buffer.shift() || channel.options.baseline;
+      channel.cursor.x += channel.deltaX;
+      channel.cursor.y = channel.transform(value);
+      ctx.lineTo(channel.cursor.x, channel.cursor.y);
+    }
+
     ctx.strokeStyle = channel.color;
     ctx.stroke();
   }
-};
+}
+
+export default VitalsRenderer;
 
 /**
  * Maps a value from one range to another.
