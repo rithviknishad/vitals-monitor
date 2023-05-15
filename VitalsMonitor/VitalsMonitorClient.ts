@@ -33,20 +33,16 @@ class VitalsMonitorClient extends EventEmitter {
       console.info(`VitalsMonitorClient(${this._ws.url}): Disconnected`);
 
     this._ws.addEventListener("message", (event) => {
-      const observations = this._parseObservations(event.data);
+      const observations = parseObservations(event.data);
 
       observations.forEach((observation) => {
-        if (observation["wave-name"]) {
+        if (observation.observation_id === "waveform") {
           this.emit(WAVEFORM_KEY_MAP[observation["wave-name"]], observation);
         } else {
           this.emit(observation.observation_id, observation);
         }
       });
     });
-  }
-
-  _parseObservations(data: string) {
-    return JSON.parse(data || "[]") as VitalsMonitorObservation[];
   }
 
   disconnect() {
@@ -91,29 +87,56 @@ export type ObservationID =
   | "body-temperature2"
   | "waveform";
 
-export interface VitalsMonitorObservation {
-  observation_id: ObservationID | "waveform";
+interface VitalsDataBase {
   device_id: string;
   "date-time": string;
   "patient-id": string;
   "patient-name": string;
-  status?: string;
-  value?: number;
-  unit?: string;
-  interpretation?: string;
-  "low-limit"?: number;
-  "high-limit"?: number;
-  "wave-name"?: "II" | "Pleth" | "Respiration";
-  resolution?: string;
-  "sampling rate"?: string;
-  "data-baseline"?: number;
-  "data-low-limit"?: number;
-  "data-high-limit"?: number;
-  data?: string;
 }
+
+interface VitalsValueData {
+  observation_id:
+    | "heart-rate"
+    | "ST"
+    | "SpO2"
+    | "pulse-rate"
+    | "respiratory-rate"
+    | "body-temperature1"
+    | "body-temperature2";
+
+  status: string;
+  value: number;
+  unit: string;
+  interpretation: string;
+  "low-limit": number;
+  "high-limit": number;
+}
+
+interface VitalsWaveformData {
+  observation_id: "waveform";
+
+  "wave-name": "II" | "Pleth" | "Respiration";
+  resolution: string;
+  "sampling rate": string;
+  "data-baseline": number;
+  "data-low-limit": number;
+  "data-high-limit": number;
+  data: string;
+}
+
+export type VitalsMonitorValueData = VitalsDataBase & VitalsValueData;
+export type VitalsMonitorWaveformData = VitalsDataBase & VitalsWaveformData;
+
+export type VitalsMonitorObservation =
+  | VitalsMonitorValueData
+  | VitalsMonitorWaveformData;
 
 type EventName =
   | ObservationID
   | "ecg-waveform"
   | "pleth-waveform"
   | "spo2-waveform";
+
+const parseObservations = (data: string) => {
+  return JSON.parse(data || "[]") as VitalsMonitorObservation[];
+};

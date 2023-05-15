@@ -6,13 +6,22 @@ import { useEffect } from "react";
  * waveform.
  */
 export default function DummyVitalsMonitor(props: { socketUrl: string }) {
-  const monitor = useVitalsMonitor();
+  const { connect, waveformCanvas } = useVitalsMonitor();
 
   useEffect(() => {
-    monitor.connect(props.socketUrl);
-  }, [props.socketUrl]);
+    connect(props.socketUrl);
+  }, [props.socketUrl, connect]);
 
-  const size = { width: monitor.size.width, height: monitor.size.height + 100 };
-
-  return <canvas className="bg-black" ref={monitor.canvasRef} {...size} />;
+  return (
+    <div className="flex gap-2 bg-black p-2 rounded">
+      <div className="relative">
+        <canvas
+          className="top-0 left-0"
+          ref={waveformCanvas.foreground.canvasRef}
+          {...waveformCanvas.size}
+        />
+      </div>
+      <div className="w-20 text-white">hello</div>
+    </div>
+  );
 }

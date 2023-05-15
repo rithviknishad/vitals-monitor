@@ -10,10 +10,12 @@ export default function Home() {
   return (
     <div className="flex flex-col h-screen w-full items-center gap-2">
       <VitalsSourceConfig onConnect={setSocketUrl} />
-      {socketUrl &&
-        Array.from({ length: 9 }).map((_, i) => (
-          <DummyVitalsMonitor key={i} socketUrl={socketUrl} />
-        ))}
+      <div className="grid grid-cols-3 gap-2">
+        {socketUrl &&
+          Array.from({ length: 9 }).map((_, i) => (
+            <DummyVitalsMonitor key={i} socketUrl={socketUrl} />
+          ))}
+      </div>
     </div>
   );
 }

@@ -48,7 +48,11 @@ interface Options {
   /**
    * The 2D render context of the canvas to draw the vitals waveforms on.
    */
-  renderContext: CanvasRenderingContext2D;
+  foregroundRenderContext: CanvasRenderingContext2D;
+  /**
+   * The 2D render context of the canvas to draw the
+   */
+  backgroundRenderContext: CanvasRenderingContext2D;
   /**
    * The interval at which the canvas is rendered in milliseconds.
    */
@@ -144,7 +148,7 @@ class VitalsRenderer {
   }
 
   private initialize(channel: ChannelState) {
-    const { renderContext: ctx, size } = this.options;
+    const { foregroundRenderContext: ctx, size } = this.options;
     const { transform, rows, options, color } = channel;
 
     for (let row = 0; row < rows; row++) {
@@ -161,7 +165,7 @@ class VitalsRenderer {
   }
 
   private render(channel: ChannelState) {
-    const { renderContext: ctx, size } = this.options;
+    const { foregroundRenderContext: ctx, size } = this.options;
     const { cursor, deltaX, transform } = channel;
 
     const xMax = size.width * channel.rows;
