@@ -85,13 +85,7 @@ export default function useVitalsMonitor() {
         device.current!.on("respiratory-rate", hook(setRespiratoryRate));
         device.current!.on("body-temperature1", hook(setTemperature1));
         device.current!.on("body-temperature2", hook(setTemperature2));
-        device.current!.on("blood-pressure", (v) => hook(setBp));
-
-        // if (callbacks) {
-        //   Object.entries(callbacks).forEach(([key, callback]) => {
-        //     _monitor?.on(key as any, callback);
-        //   });
-        // }
+        device.current!.on("blood-pressure", hook(setBp));
       }
 
       device.current.once("ecg-waveform", (observation) => {
