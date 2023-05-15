@@ -6,14 +6,14 @@ import { useEffect } from "react";
  * waveform.
  */
 export default function DummyVitalsMonitor(props: { socketUrl: string }) {
-  const { connect, waveformCanvas } = useVitalsMonitor();
+  const { connect, waveformCanvas, data } = useVitalsMonitor();
 
   useEffect(() => {
     connect(props.socketUrl);
-  }, [props.socketUrl, connect]);
+  }, [props.socketUrl]);
 
   return (
-    <div className="flex gap-2 bg-black p-2 rounded">
+    <div className="flex divide-x divide-blue-600 gap-2 bg-slate-950 p-2 rounded">
       <div className="relative">
         <canvas
           className="top-0 left-0"
@@ -21,7 +21,103 @@ export default function DummyVitalsMonitor(props: { socketUrl: string }) {
           {...waveformCanvas.size}
         />
       </div>
-      <div className="w-20 text-white">hello</div>
+      <div className="flex flex-col w-full divide-y divide-blue-600 text-white font-mono tracking-wider">
+        {/* Pulse Rate */}
+        <div className="flex justify-between items-center p-1">
+          <div className="flex flex-col h-full items-start text-sm text-green-400 font-bold">
+            <span>ECG</span>
+            <span>{data.pulseRate?.unit ?? "--"}</span>
+          </div>
+          <span className="text-6xl font-black text-gray-300">
+            {data.pulseRate?.value ?? "--"}
+          </span>
+          {data.pulseRate !== undefined && (
+            <span className="text-red-500 animate-pulse font-sans">❤️</span>
+          )}
+        </div>
+
+        {/* Blood Pressure */}
+        <div className="flex flex-col w-full p-1">
+          <div className="flex w-full gap-2 text-orange-500 font-bold">
+            <span className="text-sm">NIBP</span>
+            <span className="text-xs">{data.bp?.systolic.unit ?? "--"}</span>
+          </div>
+          <div className="flex w-full text-sm text-orange-500 font-medium justify-center">
+            Sys / Dia
+          </div>
+          <div className="flex w-full text-orange-300 text-5xl font-black justify-center">
+            <span>{data.bp?.systolic.value ?? "--"}</span>
+            <span>/</span>
+            <span>{data.bp?.diastolic.value ?? "--"}</span>
+          </div>
+          <div className="flex items-end">
+            <span className="flex-1 text-orange-500 font-bold text-sm">
+              Mean
+            </span>
+            <span className="flex-1 text-gray-300 font-bold text-xl">
+              {data.bp?.map.value ?? "--"}
+            </span>
+          </div>
+        </div>
+
+        {/* SpO2 */}
+        <div className="flex justify-between items-center p-1">
+          <div className="flex gap-2 items-start h-full text-yellow-300 font-bold">
+            <span className="text-sm">SpO2</span>
+            <span className="text-xs">{data.spo2?.unit ?? "--"}</span>
+          </div>
+          <span className="text-6xl font-black text-yellow-300 mr-3">
+            {data.spo2?.value ?? "--"}
+          </span>
+        </div>
+
+        {/* Respiratory Rate */}
+        <div className="flex justify-between items-center p-1">
+          <div className="flex flex-col items-start h-full text-sky-300 font-bold">
+            <span className="text-sm">RESP</span>
+            <span className="text-xs">
+              {data.respiratoryRate?.unit ?? "--"}
+            </span>
+          </div>
+          <span className="text-6xl font-black text-sky-300 mr-3">
+            {data.respiratoryRate?.value ?? "---"}
+          </span>
+        </div>
+
+        {/* Temperature */}
+        <div className="flex flex-col w-full p-1">
+          <div className="flex w-full gap-2 text-fuchsia-400 font-bold">
+            <span className="text-sm">TEMP</span>
+            <span className="text-xs">
+              {data.temperature1?.unit?.replace("deg ", "°") ?? "--"}
+            </span>
+          </div>
+          <div className="flex w-full gap-3 justify-between text-fuchsia-400">
+            <div className="flex flex-col gap-1 justify-start">
+              <span className="text-xs font-bold">T1</span>
+              <span className="text-2xl font-black">
+                {data.temperature1?.value ?? "--"}
+              </span>
+            </div>
+            <div className="flex flex-col gap-1 justify-start">
+              <span className="text-xs font-bold">T2</span>
+              <span className="text-2xl font-black">
+                {data.temperature2?.value ?? "--"}
+              </span>
+            </div>
+            <div className="flex flex-col gap-1 justify-start">
+              <span className="text-xs font-bold">TD</span>
+              <span className="text-2xl font-black">
+                {data.temperature1?.value && data.temperature2?.value
+                  ? Math.abs(
+                      data.temperature1!.value - data.temperature2!.value
+                    )
+                  : "--"}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

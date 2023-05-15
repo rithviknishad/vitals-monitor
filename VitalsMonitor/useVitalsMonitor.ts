@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import useCanvas from "@/hooks/useCanvas";
-import VitalsMonitorClient, {
-  VitalsMonitorObservation,
-  VitalsMonitorWaveformData,
-} from "./VitalsMonitorClient";
+import VitalsDeviceClient, {
+  VitalsData,
+  VitalsValue,
+  VitalsWaveformData,
+} from "./VitalsDeviceClient";
 import VitalsRenderer, { ChannelOptions } from "./VitalsRenderer";
 
 const MONITOR_RATIO = {
@@ -22,15 +23,26 @@ const MONITOR_SIZE = {
   height: MONITOR_RATIO.h * MONITOR_SCALE,
 };
 
-export default function useVitalsMonitor(callbacks?: {
-  [key in Parameters<VitalsMonitorClient["on"]>[0]]: (
-    observation: VitalsMonitorObservation
-  ) => void;
-}) {
+interface VitalsBPValue {
+  systolic: VitalsValue;
+  diastolic: VitalsValue;
+  map: VitalsValue;
+}
+
+export default function useVitalsMonitor() {
   const waveformForegroundCanvas = useCanvas();
   const waveformBackgroundCanvas = useCanvas();
 
-  const monitor = useRef<VitalsMonitorClient>();
+  // Non waveform data states.
+  const [pulseRate, setPulseRate] = useState<VitalsValue>();
+  const [bp, setBp] = useState<VitalsBPValue>();
+  const [spo2, setSpo2] = useState<VitalsValue>();
+  const [respiratoryRate, setRespiratoryRate] = useState<VitalsValue>();
+  const [temperature1, setTemperature1] = useState<VitalsValue>();
+  const [temperature2, setTemperature2] = useState<VitalsValue>();
+
+  // Waveform data states.
+  const device = useRef<VitalsDeviceClient>();
   const renderer = useRef<VitalsRenderer | null>(null);
 
   const ecgOptionsRef = useRef<ChannelOptions>();
@@ -39,10 +51,10 @@ export default function useVitalsMonitor(callbacks?: {
 
   const connect = useCallback(
     (socketUrl: string) => {
-      monitor.current?.disconnect();
+      device.current?.disconnect();
 
-      monitor.current = new VitalsMonitorClient(socketUrl);
-      monitor.current.connect();
+      device.current = new VitalsDeviceClient(socketUrl);
+      device.current.connect();
 
       function obtainRenderer() {
         if (
@@ -63,41 +75,41 @@ export default function useVitalsMonitor(callbacks?: {
         });
 
         const _renderer = renderer.current;
-        const _monitor = monitor.current;
+        device.current!.on("ecg-waveform", ingestTo(_renderer, "ecg"));
+        device.current!.on("pleth-waveform", ingestTo(_renderer, "pleth"));
+        device.current!.on("spo2-waveform", ingestTo(_renderer, "spo2"));
 
-        _monitor?.on("ecg-waveform", ingestTo(_renderer, "ecg"));
-        _monitor?.on("pleth-waveform", ingestTo(_renderer, "pleth"));
-        _monitor?.on("spo2-waveform", ingestTo(_renderer, "spo2"));
+        const hook = (set: (data: any) => void) => (d: VitalsData) => set(d);
+        device.current!.on("heart-rate", hook(setPulseRate));
+        device.current!.on("SpO2", hook(setSpo2));
+        device.current!.on("respiratory-rate", hook(setRespiratoryRate));
+        device.current!.on("body-temperature1", hook(setTemperature1));
+        device.current!.on("body-temperature2", hook(setTemperature2));
+        device.current!.on("blood-pressure", (v) => hook(setBp));
 
-        if (callbacks) {
-          Object.entries(callbacks).forEach(([key, callback]) => {
-            _monitor?.on(key as any, callback);
-          });
-        }
+        // if (callbacks) {
+        //   Object.entries(callbacks).forEach(([key, callback]) => {
+        //     _monitor?.on(key as any, callback);
+        //   });
+        // }
       }
 
-      monitor.current.once("ecg-waveform", (observation) => {
-        ecgOptionsRef.current = getChannel(
-          observation as VitalsMonitorWaveformData
-        );
+      device.current.once("ecg-waveform", (observation) => {
+        ecgOptionsRef.current = getChannel(observation as VitalsWaveformData);
         obtainRenderer();
       });
 
-      monitor.current.once("pleth-waveform", (observation) => {
-        plethOptionsRef.current = getChannel(
-          observation as VitalsMonitorWaveformData
-        );
+      device.current.once("pleth-waveform", (observation) => {
+        plethOptionsRef.current = getChannel(observation as VitalsWaveformData);
         obtainRenderer();
       });
 
-      monitor.current.once("spo2-waveform", (observation) => {
-        spo2OptionsRef.current = getChannel(
-          observation as VitalsMonitorWaveformData
-        );
+      device.current.once("spo2-waveform", (observation) => {
+        spo2OptionsRef.current = getChannel(observation as VitalsWaveformData);
         obtainRenderer();
       });
     },
-    [waveformForegroundCanvas.contextRef]
+    [waveformForegroundCanvas.contextRef, waveformBackgroundCanvas]
   );
 
   return {
@@ -107,10 +119,18 @@ export default function useVitalsMonitor(callbacks?: {
       background: waveformBackgroundCanvas,
       size: MONITOR_WAVEFORMS_CANVAS_SIZE,
     },
+    data: {
+      pulseRate,
+      bp,
+      spo2,
+      respiratoryRate,
+      temperature1,
+      temperature2,
+    },
   };
 }
 
-const getChannel = (observation: VitalsMonitorWaveformData): ChannelOptions => {
+const getChannel = (observation: VitalsWaveformData): ChannelOptions => {
   return {
     samplingRate: parseInt(
       observation["sampling rate"]?.replace("/sec", "") ?? "-1"
@@ -125,10 +145,10 @@ const ingestTo = (
   vitalsRenderer: VitalsRenderer,
   channel: "ecg" | "pleth" | "spo2"
 ) => {
-  return (observation: VitalsMonitorObservation) => {
+  return (observation: VitalsData) => {
     vitalsRenderer.append(
       channel,
-      (observation as VitalsMonitorWaveformData).data
+      (observation as VitalsWaveformData).data
         .split(" ")
         .map((x) => parseInt(x)) || []
     );
